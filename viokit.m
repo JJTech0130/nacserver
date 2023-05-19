@@ -255,15 +255,9 @@ CFDictionaryRef DADiskCopyDescription(CFNumberRef disk) {
   return dict;
 }
 
-#if SYSCTLHOOK == 1
+// sysctlbyname needs to be stubbed for Darling...
 
-#import "fishhook.h"
-#import <sys/sysctl.h>
-
-static int (*sysctlbyname_orig)(const char *name, void *oldp, size_t *oldlenp,
-                                void *newp, size_t newlen);
-
-int sysctlbyname_hook(const char *name, void *oldp, size_t *oldlenp, void *newp,
+int sysctlbyname(const char *name, void *oldp, size_t *oldlenp, void *newp,
                       size_t newlen) {
   NSLog(@"sysctlbyname_hook called with name: %s", name);
   // If it's kern.osversion
@@ -293,14 +287,3 @@ int sysctlbyname_hook(const char *name, void *oldp, size_t *oldlenp, void *newp,
 
   return ENOENT;
 }
-
-// Run when dylib is loaded init function
-__attribute__((constructor)) static void init() {
-  NSLog(@"Hooking sysctlbyname using fishhook...");
-  // Hook sysctlbyname
-  rebind_symbols((struct rebinding[1]){{"sysctlbyname", sysctlbyname_hook,
-                                        (void *)&sysctlbyname_orig}},
-                 1);
-}
-
-#endif

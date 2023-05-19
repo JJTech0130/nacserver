@@ -23,21 +23,18 @@ REMOVING = [
 ]
 
 STUB_LIST = []
+IO_ORDINAL = 0
 for sym in lib.symbols:
     name = sym.name[1:]
     if sym.binding_info:
         if sym.binding_info.library.name in REMOVING:
-            #print("Stubbing", name)
             STUB_LIST.append(name)
-        # # Special stubs for IOKit
+        # We move the sysctlbyname stub to IOKit so that we don't have to stub all of libSystem
         if sym.binding_info.library.name == "/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit":
-            #print("IOKit/DA stub", name)
-            pass
-        if sym.binding_info.library.name == "/System/Library/Frameworks/DiskArbitration.framework/Versions/A/DiskArbitration":
-            print("DA stub", name)
-            #STUB_LIST.append(name)
-        #     sym.name = "_V" + name[1:] # So that our stubs don't conflict with the real symbols
-        #     STUB_LIST.append(sym.name)
+            IO_ORDINAL = sym.binding_info.library_ordinal
+        if name == "sysctlbyname":
+            print(f"Moving sysctlbyname stub from {sym.binding_info.library_ordinal} to {IO_ORDINAL}" )
+            sym.binding_info.library_ordinal = IO_ORDINAL
         
 for cmd in lib.commands:
     # Check if it is a LOAD_DYLIB command
